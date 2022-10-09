@@ -972,9 +972,9 @@ namespace Discord.Gateway
         }
 
 
-        public void CreateCommandHandler(string prefix)
+        public void CreateCommandHandler(string prefix, bool allowMention = true)
         {
-            CommandHandler = new CommandHandler(prefix, this);
+            CommandHandler = new CommandHandler(prefix, this, allowMention);
         }
 
 

@@ -11,13 +11,17 @@ namespace Discord.Commands
     {
         private readonly DiscordSocketClient _client;
         public string Prefix { get; private set; }
+        public bool AllowMention { get; private set; }
         public Dictionary<string, DiscordCommand> Commands { get; private set; }
 
-        internal CommandHandler(string prefix, DiscordSocketClient client)
+        internal CommandHandler(string prefix, DiscordSocketClient client, bool allowMention)
         {
             _client = client;
 
             Prefix = prefix;
+
+            AllowMention = allowMention;
+
             client.OnMessageReceived += Client_OnMessageReceived;
 
             Assembly executable = Assembly.GetEntryAssembly();
@@ -30,62 +34,96 @@ namespace Discord.Commands
             }
         }
 
+        private bool Mentioned(IReadOnlyList<DiscordUser> mentions)
+        {
+            if (!AllowMention)
+            {
+                return false;
+            }
+            if (mentions.Count == 0)
+            {
+                return false;
+            }
+            if (mentions.FirstOrDefault().Id == _client.User.Id)
+            {
+                return true;
+            }
+            return false;
+        }
 
         private void Client_OnMessageReceived(DiscordSocketClient client, MessageEventArgs args)
         {
-            if (args.Message.Content.StartsWith(Prefix))
+            bool isMentioned = Mentioned(args.Message.Mentions);
+            // message must start with the prefix
+            if (!args.Message.Content.StartsWith(Prefix) && !isMentioned)
             {
-                List<string> parts = args.Message.Content.Split(' ').ToList();
+                return;
+            }
 
-                if (Commands.TryGetValue(parts[0].Substring(Prefix.Length), out DiscordCommand command))
+            List<string> parts = args.Message.Content.Split(' ').ToList();
+            DiscordCommand command;
+
+            if (!Commands.TryGetValue(parts[0].Substring(Prefix.Length), out command) && (isMentioned && !Commands.TryGetValue(parts[1], out command)))
+            {
+                return;
+            }
+
+            parts.RemoveAt(0);
+
+            if (isMentioned)
+            {
+                parts.RemoveAt(0);
+            }
+
+            CommandBase inst = (CommandBase)Activator.CreateInstance(command.Type);
+            inst.Prepare(_client, args.Message);
+
+            if (parts.Count > command.Parameters.Count)
+            {
+                inst.HandleError(null, null, new ArgumentNullException("Too many arguments provided"));
+                return;
+            }
+
+            for (int i = 0; i < command.Parameters.Count; i++)
+            {
+                var param = command.Parameters[i];
+
+                if (param.Optional)
+                    continue;
+
+                if (i < parts.Count)
                 {
-                    parts.RemoveAt(0);
-
-                    CommandBase inst = (CommandBase)Activator.CreateInstance(command.Type);
-                    inst.Prepare(_client, args.Message);
-
-                    for (int i = 0; i < command.Parameters.Count; i++)
+                    try
                     {
-                        var param = command.Parameters[i];
+                        object value;
 
-                        if (i < parts.Count)
-                        {
-                            try
-                            {
-                                object value;
-
-                                if (param.Property.PropertyType == typeof(string) && i == command.Parameters.Count - 1)
-                                    value = string.Join(" ", parts.Skip(i));
-                                else if (args.Message.Guild != null && parts[i].StartsWith("<") && parts[i].EndsWith(">"))
-                                    value = ParseReference(param.Property.PropertyType, parts[i]);
-                                else
-                                    value = parts[i];
-
-                                if (!param.Property.PropertyType.IsAssignableFrom(value.GetType()))
-                                    value = Convert.ChangeType(value, param.Property.PropertyType);
-
-                                param.Property.SetValue(inst, value);
-                            }
-                            catch (Exception ex)
-                            {
-                                inst.HandleError(param.Name, parts[i], ex);
-
-                                return;
-                            }
-                        }
-                        else if (param.Optional)
-                            break;
+                        if (param.Property.PropertyType == typeof(string) && i == command.Parameters.Count - 1)
+                            value = string.Join(" ", parts.Skip(i));
+                        else if (args.Message.Guild != null && parts[i].StartsWith("<") && parts[i].EndsWith(">"))
+                            value = ParseReference(param.Property.PropertyType, parts[i]);
                         else
-                        {
-                            inst.HandleError(param.Name, null, new ArgumentNullException("Too few arguments provided"));
+                            value = parts[i];
 
-                            return;
-                        }
+                        if (!param.Property.PropertyType.IsAssignableFrom(value.GetType()))
+                            value = Convert.ChangeType(value, param.Property.PropertyType);
+
+                        param.Property.SetValue(inst, value);
                     }
+                    catch (Exception ex)
+                    {
+                        inst.HandleError(param.Name, parts[i], ex);
 
-                    inst.Execute();
+                        return;
+                    }
+                }
+                else
+                {
+                    inst.HandleError(param.Name, null, new ArgumentNullException("missing argument"));
+                    return;
                 }
             }
+
+            inst.Execute();
         }
 
         // https://discord.com/developers/docs/reference#message-formatting
