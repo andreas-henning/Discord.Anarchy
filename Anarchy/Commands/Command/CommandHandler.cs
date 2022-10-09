@@ -146,57 +146,57 @@ namespace Discord.Commands
 
                     if (expectedType.IsAssignableFrom(typeof(MinimalChannel)))
                     {
-                        if (forSpecific == "#")
+                        if (forSpecific != "#")
                         {
-                            if (expectedType.IsAssignableFrom(typeof(DiscordChannel)))
-                            {
-                                if (_client.Config.Cache)
-                                    return _client.GetChannel(anyId);
-                                else
-                                    throw new InvalidOperationException("Caching must be enabled to parse DiscordChannels");
-                            }
-                            else
-                                return new MinimalTextChannel(anyId).SetClient(_client);
-                        }
-                        else
                             throw new ArgumentException("Invalid reference type");
+                        }
+                        if (!expectedType.IsAssignableFrom(typeof(DiscordChannel)))
+                        {
+                            return new MinimalTextChannel(anyId).SetClient(_client);
+                        }
+
+                        if (_client.Config.Cache)
+                            return _client.GetChannel(anyId);
+                        else
+                            throw new InvalidOperationException("Caching must be enabled to parse DiscordChannels");
                     }
                     else if (expectedType == typeof(DiscordRole))
                     {
-                        if (forSpecific.StartsWith("@&"))
+                        if (!forSpecific.StartsWith("@&"))
                         {
-                            if (_client.Config.Cache)
-                                return _client.GetGuildRole(anyId);
-                            else
-                                throw new InvalidOperationException("Caching must be enabled to parse DiscordChannels");
-                        }
-                        else
                             throw new ArgumentException("Invalid reference type");
+                        }
+
+                        if (_client.Config.Cache)
+                            return _client.GetGuildRole(anyId);
+                        else
+                            throw new InvalidOperationException("Caching must be enabled to parse DiscordChannels");
+                        
                     }
                     else if (expectedType.IsAssignableFrom(typeof(PartialEmoji)))
                     {
-                        if (Regex.IsMatch(forSpecific, @"a?:\w+:"))
+                        if (!Regex.IsMatch(forSpecific, @"a?:\w+:"))
                         {
-                            string[] split = forSpecific.Split(':');
-
-                            bool animated = split[0] == "a";
-                            string name = split[1];
-
-                            if (expectedType == typeof(DiscordEmoji))
-                            {
-                                if (_client.Config.Cache)
-                                    return _client.GetGuildEmoji(anyId);
-                                else
-                                    throw new InvalidOperationException("Caching must be enabled to parase DiscordEmojis");
-                            }
-                            else
-                                return new PartialEmoji(anyId, name, animated).SetClient(_client);
+                            throw new ArgumentException("Invalid reference type");    
                         }
+
+                        string[] split = forSpecific.Split(':');
+
+                        bool animated = split[0] == "a";
+                        string name = split[1];
+
+                        if (expectedType != typeof(DiscordEmoji))
+                        {
+                            return new PartialEmoji(anyId, name, animated).SetClient(_client);
+                        }
+
+                        if (_client.Config.Cache)
+                            return _client.GetGuildEmoji(anyId);
                         else
-                            throw new ArgumentException("Invalid reference type");
+                            throw new InvalidOperationException("Caching must be enabled to parase DiscordEmojis");
                     }
-                    else
-                        return anyId;
+                    
+                    return anyId;
                 }
             }
 
