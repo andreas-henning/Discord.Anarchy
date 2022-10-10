@@ -63,6 +63,7 @@ namespace Discord.Commands
             List<string> parts = args.Message.Content.Split(' ').ToList();
             DiscordCommand command;
 
+            // message must contain the command name
             if (!Commands.TryGetValue(parts[0].Substring(Prefix.Length), out command) && (isMentioned && !Commands.TryGetValue(parts[1], out command)))
             {
                 return;
@@ -88,8 +89,6 @@ namespace Discord.Commands
             {
                 var param = command.Parameters[i];
 
-                if (param.Optional)
-                    continue;
 
                 if (i < parts.Count)
                 {
@@ -116,9 +115,11 @@ namespace Discord.Commands
                         return;
                     }
                 }
+                else if (param.Optional)
+                    break;
                 else
                 {
-                    inst.HandleError(param.Name, null, new ArgumentNullException("missing argument"));
+                    inst.HandleError(param.Name, null, new ArgumentNullException("Too few arguments provided"));
                     return;
                 }
             }
