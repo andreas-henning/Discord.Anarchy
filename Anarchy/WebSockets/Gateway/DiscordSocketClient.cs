@@ -233,23 +233,24 @@ namespace Discord.Gateway
 
         private void ApplyGuild(SocketGuild guild)
         {
-            if (!guild.Unavailable)
+            if (guild.Unavailable)
             {
-                foreach (var member in guild.Members)
-                {
-                    if (member.User.Id == User.Id)
-                    {
-                        ClientMembers[guild.Id] = member;
-                        break;
-                    }
-                }
-
-                foreach (var state in guild.VoiceStates)
-                    VoiceStates[state.UserId].GuildStates[guild.Id] = state;
-
-                foreach (var presence in guild.Presences)
-                    Presences[presence.UserId] = presence;
+                return;
             }
+            foreach (var member in guild.Members)
+            {
+                if (member.User.Id == User.Id)
+                {
+                    ClientMembers[guild.Id] = member;
+                    break;
+                }
+            }
+
+            foreach (var state in guild.VoiceStates)
+                VoiceStates[state.UserId].GuildStates[guild.Id] = state;
+
+            foreach (var presence in guild.Presences)
+                Presences[presence.UserId] = presence;
         }
 
 
