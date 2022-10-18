@@ -89,7 +89,6 @@ namespace Discord.Commands
             {
                 var param = command.Parameters[i];
 
-
                 if (i < parts.Count)
                 {
                     try
@@ -210,7 +209,7 @@ namespace Discord.Commands
             {
                 if (attribute.GetType() == typeof(TAttr))
                 {
-                    attr = (TAttr)attribute;
+                    attr = (TAttr) attribute;
                     return true;
                 }
             }
