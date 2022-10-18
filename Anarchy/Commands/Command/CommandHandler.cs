@@ -81,7 +81,7 @@ namespace Discord.Commands
 
             if (parts.Count > command.Parameters.Count)
             {
-                inst.HandleError(null, null, new ArgumentNullException("Too many arguments provided"));
+                inst.HandleError(null, null, new ArgumentNullException("Too many arguments provided."));
                 return;
             }
 

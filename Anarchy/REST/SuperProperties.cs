@@ -19,7 +19,10 @@ namespace Discord
                 string appPage = client.GetStringAsync("https://discord.com/app").Result;
                 const string findThis = "build_number:\"";
 
-                foreach (var asset in new List<Match>(Regex.Matches(appPage, "/assets/.{20}.js")).Reverse())
+                List<Match> list = new List<Match>(Regex.Matches(appPage, "/assets/.{20}.js"));
+                list.Reverse();
+
+                foreach (var asset in list)
                 {
                     var content = client.GetStringAsync("https://discord.com" + asset).Result;
 
