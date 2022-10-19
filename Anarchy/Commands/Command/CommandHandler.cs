@@ -34,7 +34,7 @@ namespace Discord.Commands
             }
         }
 
-        private bool Mentioned(IReadOnlyList<DiscordUser> mentions)
+        private bool IsMentioned(IReadOnlyList<DiscordUser> mentions)
         {
             if (!AllowMention)
             {
@@ -53,7 +53,8 @@ namespace Discord.Commands
 
         private void Client_OnMessageReceived(DiscordSocketClient client, MessageEventArgs args)
         {
-            bool isMentioned = Mentioned(args.Message.Mentions);
+            bool isMentioned = IsMentioned(args.Message.Mentions);
+
             // message must start with the prefix
             if (!args.Message.Content.StartsWith(Prefix) && !isMentioned)
             {
@@ -64,7 +65,7 @@ namespace Discord.Commands
             DiscordCommand command;
 
             // message must contain the command name
-            if (!Commands.TryGetValue(parts[0].Substring(Prefix.Length), out command) && (isMentioned && !Commands.TryGetValue(parts[1], out command)))
+            if (!Commands.TryGetValue(parts[0].Substring(Prefix.Length), out command) && isMentioned && !Commands.TryGetValue(parts[1], out command))
             {
                 return;
             }

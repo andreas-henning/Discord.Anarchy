@@ -34,7 +34,8 @@ namespace Discord
 
             var client = new DiscordSocketClient(new DiscordSocketConfig()
             {
-                Proxy = Settings.Proxy?.CreateProxy()
+                Proxy = Settings.Proxy?.CreateProxy(),
+                Intents = DiscordGatewayIntent.Guilds | DiscordGatewayIntent.GuildMessages | DiscordGatewayIntent.GuildIntegrations
             });
 
             client.OnLoggedIn += OnLoggedIn;
